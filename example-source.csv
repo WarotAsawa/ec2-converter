@@ -1,0 +1,13 @@
+﻿Source Name,core,ghz,memory,os
+VM Source 00,1,,0.5,Linux
+VM Source 00,1,,0.5,Windows
+VM Source 01,2,2.2,4,Windows
+VM Source 02,3,,6,RHEL
+VM Source 03,4,2.1,4,SLES
+VM Source 04,1,,4,Windows
+VM Source 05,2,,6,Linux
+VM Source 06,4,,8,Linux
+VM Source 07,2,,10,RHEL
+VM Source 08,24,,1024,SLES
+VM Source 09,32,,2048,Windows
+VM Source 10,100,,3000,Windows
