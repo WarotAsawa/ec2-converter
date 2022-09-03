@@ -3,6 +3,9 @@ import re
 import re
 import sys
 import math
+import json
+import os
+import pandas as pd
 from datetime import datetime
 
 def ImportDictFromCSV(filename):
@@ -84,12 +87,24 @@ def main(argv):
     fileName = argv[0].split('.')
     print("Getting fron file : " + fileName[0])
     #Get EC2 instance for all VMs
-    resultList = []
+    resultList = {}
+    index=0;
+    sumcore = 0;
+    summem = 0;
+    sumCPU = 0;
+    sumMem =0;
+    sumHourly = 0
+
     for input in inputList:
         result = GetLowestInstancePrice(input, ec2Cost, ec2Spec, options)
         #print(result)
-        resultList.append(result)
-    
+        resultList[index] = result
+        index += 1
+        sumCPU = sumCPU + result['vCPUs']
+        sumMem = sumMem + result['Memory']
+        sumHourly = sumHourly + result['Hourly Pricing']
+        sumcore = sumcore + float(result['core'])
+        summem = summem + float(result["memory"])
     
     #Prepare to write file
     now = datetime.now()
@@ -97,46 +112,29 @@ def main(argv):
     outFileName = fileName[0]+'-result-'+date+'.csv'
 
     #Write File
-    sumCPU = 0;
-    sumMem =0;
-    sumHourly = 0
+    
     print("Writing file to : " + outFileName)
-    for result in resultList:
-        print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
-        sumCPU = sumCPU + result['vCPUs']
-        sumMem = sumMem + result['Memory']
-        sumHourly = sumHourly + result['Hourly Pricing']
+    #for result in resultList:
+    #    print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
+        
     sumRow = {}
     sumRow['Source Name'] = "Total"
+    sumRow['core'] = sumcore
+    sumRow['memory'] = summem
     sumRow['vCPUs'] = sumCPU
     sumRow['Memory'] = sumMem
     sumRow['Hourly Pricing'] = sumHourly
     sumRow['Monthly Pricing'] = sumHourly * 730;
+    resultList[len(resultList)] = sumRow
 
+    resultListStr = json.dumps(resultList, indent=2)
+    with open("temp-result.json", "w") as outfile:
+        outfile.write(resultListStr)
 
-    #Write File
-    sumCPU = 0;
-    sumMem =0;
-    sumHourly = 0
-    print("Writing file to : " + outFileName)
-    for result in resultList:
-        print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
-        sumCPU = sumCPU + result['vCPUs']
-        sumMem = sumMem + result['Memory']
-        sumHourly = sumHourly + result['Hourly Pricing']
-    sumRow = {}
-    sumRow['Source Name'] = "Total"
-    sumRow['vCPUs'] = sumCPU
-    sumRow['Memory'] = sumMem
-    sumRow['Hourly Pricing'] = sumHourly
-    sumRow['Monthly Pricing'] = sumHourly * 730;
-
-    with open(outFileName, 'w') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(resultList[0].keys())
-        for result in resultList:
-            writer.writerow(result[index] for index in result.keys())
-        writer.writerow(sumRow[index] for index in sumRow.keys())
+    resultObject = pd.read_json("temp-result.json", orient='index')
+    resultObject.to_csv(outFileName, index=False)
+    print(resultObject)
+    os.remove("temp-result.json") 
 
 if __name__ == "__main__":
    main(sys.argv[1:])

@@ -141,7 +141,8 @@ def get_price(region):
     #use pandas to convert json to csv
     pdObj = pd.read_json("temp-price.json", orient='index')
     pdObj.to_csv('ec2-cost.csv', index=False)
-
+    
+    os.remove("temp-price.json") 
 
 # Translate region code to region name. Even though the API data contains
 # regionCode field, it will not return accurate data. However using the location
