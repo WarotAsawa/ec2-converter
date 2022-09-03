@@ -1,5 +1,6 @@
 import csv
 import re
+import re
 import sys
 import math
 from datetime import datetime
@@ -24,11 +25,13 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
     ghz = 0
     memory = 0
     priceModel = 'on-demand'
+    priceModel = 'on-demand'
     os = "Linux"
     if input['core']    != "": cpu = int(input['core'])
     if input['ghz']     != "": ghz = float(input['ghz'])
     if input['memory']  != "": memory = float(input['memory'])
     if input['os']  != "": os = input['os']
+    if input['price-model'] != '': priceModel = input['price-model'] 
     if input['price-model'] != '': priceModel = input['price-model'] 
 
     print(input["Source Name"] + " : " + str(cpu) + " cores, " + str(ghz) + " GHz, " + str(memory) + " GB mem, " + os + " OS")
@@ -87,10 +90,29 @@ def main(argv):
         #print(result)
         resultList.append(result)
     
+    
     #Prepare to write file
     now = datetime.now()
     date = str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)+'-'+str(now.second)
     outFileName = fileName[0]+'-result-'+date+'.csv'
+
+    #Write File
+    sumCPU = 0;
+    sumMem =0;
+    sumHourly = 0
+    print("Writing file to : " + outFileName)
+    for result in resultList:
+        print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
+        sumCPU = sumCPU + result['vCPUs']
+        sumMem = sumMem + result['Memory']
+        sumHourly = sumHourly + result['Hourly Pricing']
+    sumRow = {}
+    sumRow['Source Name'] = "Total"
+    sumRow['vCPUs'] = sumCPU
+    sumRow['Memory'] = sumMem
+    sumRow['Hourly Pricing'] = sumHourly
+    sumRow['Monthly Pricing'] = sumHourly * 730;
+
 
     #Write File
     sumCPU = 0;
