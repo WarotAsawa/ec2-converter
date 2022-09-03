@@ -1,13 +1,14 @@
-﻿Source Name,core,ghz,memory,os
-VM Source 00,1,,0.5,Linux
-VM Source 00,1,,0.5,Windows
-VM Source 01,2,2.2,4,Windows
-VM Source 02,3,,6,RHEL
-VM Source 03,4,2.1,4,SLES
-VM Source 04,1,,4,Windows
-VM Source 05,2,,6,Linux
-VM Source 06,4,,8,Linux
-VM Source 07,2,,10,RHEL
-VM Source 08,24,,1024,SLES
-VM Source 09,32,,2048,Windows
-VM Source 10,100,,3000,Windows
+﻿Source Name,core,ghz,memory,os,price-model
+VM Source 01,1,,0.5,Linux,on-demand
+VM Source 02,1,,0.5,Windows,RI-1Y-NUF
+VM Source 03,2,2.2,4,Windows,RI-1Y-PUF
+VM Source 04,3,,6,RHEL,RI-1Y-AUF
+VM Source 05,4,2.1,4,SLES,RI-3Y-NUF
+VM Source 06,1,,4,Windows,RI-3Y-PUF
+VM Source 07,2,,6,Linux,RI-3Y-AUF
+VM Source 08,4,,8,Linux,RIC-1Y-NUF
+VM Source 09,2,,10,RHEL HA,RIC-1Y-PUF
+VM Source 10,24,,1024,SLES,RIC-1Y-AUF
+VM Source 11,32,,2048,Windows,RIC-3Y-NUF
+VM Source 12,64,,2500,Windows,RIC-3Y-PUF
+VM Source 13,100,,3000,SLES,RIC-3Y-AUF
