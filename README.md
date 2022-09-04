@@ -41,25 +41,7 @@ You can put workload requirement as a row and as many as you like. Here is the d
  - **Req Core** *(Required)* : Size of workload's CPU
  - **Req GHz** : Workload's Clock speed as GHz per Core
  - **Req Mem GB** *(Required)* : Size of workload's Memory as GB
- - **Req OS** *(Required)* : Workload's required OS. Available option is
- 
-
-    Linux
-    Linux SQL Std
-    Linux SQL Web
-    Linux SQL Ent
-    SLES
-    Windows
-    Windows SQL Std
-    Windows SQL Web
-    Windows SQL Ent
-    RHEL
-    RHEL SQL Std
-    RHEL SQL Web
-    RHEL SQL Ent
-    RHEL HA
-    RHEL HA SQL Std
-    RHEL HA SQL Ent
+ - **Req OS** *(Required)* : Workload's required OS. Available option is : Linux , Linux SQL Std , Linux SQL Web , Linux SQL Ent , SLES , Windows , Windows SQL Std , Windows SQL Web , Windows SQL Ent , RHEL , RHEL SQL Std , RHEL SQL Web , RHEL SQL Ent , RHEL HA , RHEL HA SQL Std , RHEL HA SQL Ent
 
  - **price-model** *(Required)* : Workload's pricing model as **on-demand** or **RIC-XY-XUF (reserved)**. Here is the options for reserved model:
 		 - **RI/RIC: RI** for reserved instance, and **RIC** for convertible reserved instance
