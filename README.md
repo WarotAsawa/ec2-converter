@@ -42,22 +42,25 @@ You can put workload requirement as a row and as many as you like. Here is the d
  - **Req GHz** : Workload's Clock speed as GHz per Core
  - **Req Mem GB** *(Required)* : Size of workload's Memory as GB
  - **Req OS** *(Required)* : Workload's required OS. Available option is
-		 - Linux
-		 - Linux SQL Std
-		 - Linux SQL Web
-		 - Linux SQL Ent
-		 - SLES
-		 - Windows
-		 - Windows SQL Std
-		 - Windows SQL Web
-		 - Windows SQL Ent
-		 - RHEL
-		 - RHEL SQL Std
-		 - RHEL SQL Web
-		 - RHEL SQL Ent
-		 - RHEL HA
-		 - RHEL HA SQL Std
-		 - RHEL HA SQL Ent
+ 
+
+    Linux
+    Linux SQL Std
+    Linux SQL Web
+    Linux SQL Ent
+    SLES
+    Windows
+    Windows SQL Std
+    Windows SQL Web
+    Windows SQL Ent
+    RHEL
+    RHEL SQL Std
+    RHEL SQL Web
+    RHEL SQL Ent
+    RHEL HA
+    RHEL HA SQL Std
+    RHEL HA SQL Ent
+
  - **price-model** *(Required)* : Workload's pricing model as **on-demand** or **RIC-XY-XUF (reserved)**. Here is the options for reserved model:
 		 - **RI/RIC: RI** for reserved instance, and **RIC** for convertible reserved instance
 		 - **1Y/3Y:** 1-year or 3-year saving plan
@@ -115,4 +118,5 @@ Here is the example of Output File **(example-source-result-[timestamp].csv)**
 |VM Source 12|64                           |       |2500.0                                       |Windows|RIC-3Y-PUF |100.0      |256000  |100     |30.0      |x2iedn.32xlarge|Windows|RIC-3Y-PUF   |128  |4096.0 |19.69748429223744  |14379.163533333332|100.0  |IO2     |18445.8           |130.0             |6.5                 |32831.46353333333 |
 |VM Source 13|100                          |       |3000.0                                       |SLES   |RIC-3Y-AUF |20000.0    |1000    |50      |30.0      |x1e.32xlarge   |SLES   |RIC-3Y-AUF   |128  |3904.0 |13.004680365296805 |9493.416666666668 |20000.0|IO2     |2832.0000000000005|26000.0           |1300.0              |13625.416666666668|
 |Total      |240                          |       |8615.0                                       |       |           |63201.0    |635300  |6650    |          |               |       |             |660  |12849.0|57.72215445966514  |42137.172755555555|63201.0|        |53341.67999999999 |76974.105         |3848.70525          |99327.55800555555 |
+
 
