@@ -1,3 +1,5 @@
+from turtle import back
+from unittest import result
 import boto3
 import json, csv
 import os
@@ -31,29 +33,63 @@ def translate_platform_name(operating_system, preinstalled_software):
     }
     return os[operating_system] + software[preinstalled_software]
 
-# Get current AWS price for an on-demand instance
-def get_price(region):
-    f = FLT.format(r=region)
-    hourPerMonth = 730
-    #Set required spec for ec2
-    specRow = ["instanceType","enhancedNetworkingSupported","intelTurboAvailable","memory","dedicatedEbsThroughput","vcpu","classicnetworkingsupport","storage","instanceFamily","intelAvx2Available","physicalProcessor","clockSpeed","ecu","networkPerformance","vpcnetworkingsupport","tenancy","usagetype","normalizationSizeFactor","intelAvxAvailable","processorFeatures","licenseModel","currentGeneration","preInstalledSw","processorArchitecture"]
-    #Temp list space for output
-    specMatrix = []
-    priceMatrix = {}
-    nextToken = "INIT"
-    totalPage = 0;
-    totalPrice = 0;
-    #Backup Old File
+# Backup Old File
+def backupOldFile():
+     #Backup Old File
     now = datetime.now()
     date = str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)+'-'+str(now.second)
     try: os.rename("ec2-spec.csv", "ec2-spec-bkk-"+date+".csv")
     except: print("ec2-spec.csv Not Found")
     try: os.rename("ec2-cost.csv", "ec2-cost-bkk-"+date+".csv")
     except: print("ec2-cost.csv Not Found")
+
+# Get more EC2 instance type spec
+def get_ec2_spec():
+    results = {}
+    nextToken = "INIT"
+    
     while nextToken != "END":
         #If INIT then send without token, else sent with token
-        if nextToken == "INIT": data = client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f));
-        else: data = client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f),NextToken=nextToken);
+        if nextToken == "INIT": data = ec2Client.describe_instance_types();
+        else: data = data = ec2Client.describe_instance_types(NextToken=nextToken);
+
+        #If no more Token then END the loop
+        if "NextToken" in data: nextToken = data["NextToken"]
+        else: nextToken = "END"
+        for i in range(0,len(data['InstanceTypes'])-1):
+            currentData = data['InstanceTypes'][i]
+            instanceName = currentData['InstanceType']
+            #Get Needed info
+            results[instanceName] = {}
+            if 'Hypervisor' in currentData: results[instanceName]['Hypervisor'] = currentData['Hypervisor']
+            else: results[instanceName]['Hypervisor'] = 'nitro'
+            if currentData['EbsInfo']['EbsOptimizedSupport'] != 'unsupported':
+                results[instanceName]['MaximumThroughputInMBps'] = currentData['EbsInfo']['EbsOptimizedInfo']['MaximumThroughputInMBps']
+                results[instanceName]['MaximumIops'] = currentData['EbsInfo']['EbsOptimizedInfo']['MaximumIops']
+            else:
+                results[instanceName]['MaximumThroughputInMBps'] = 50
+                results[instanceName]['MaximumIops'] = 100
+    
+    return results
+
+# Get current AWS price for an on-demand instance
+def get_price(region):
+    f = FLT.format(r=region)
+    hourPerMonth = 730
+    #Set required spec for ec2
+    specRow = ["instanceType","enhancedNetworkingSupported","intelTurboAvailable","memory","dedicatedEbsThroughput","vcpu","classicnetworkingsupport","storage","intelAvx2Available","physicalProcessor","clockSpeed","ecu","networkPerformance","vpcnetworkingsupport","tenancy","normalizationSizeFactor","intelAvxAvailable","processorFeatures","licenseModel","currentGeneration","preInstalledSw","processorArchitecture"]
+    #Temp list space for output
+    specMatrix = []
+    priceMatrix = {}
+    nextToken = "INIT"
+    totalPage = 0;
+    totalPrice = 0;
+    #Get Storage and Hypersisor spec
+    moreSpec = get_ec2_spec()
+    while nextToken != "END":
+        #If INIT then send without token, else sent with token
+        if nextToken == "INIT": data = priceClient.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f));
+        else: data = priceClient.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f),NextToken=nextToken);
 
         #If no more Token then END the loop
         if "NextToken" in data: nextToken = data["NextToken"]
@@ -75,8 +111,12 @@ def get_price(region):
                     if attr in productAttributes:
                         newInstanceSpec.append(productAttributes[attr])
                     else: newInstanceSpec.append('')
+                #Add more spec
+                for attr in moreSpec['m1.medium']:
+                    if instanceType in moreSpec: newInstanceSpec.append(moreSpec[instanceType][attr])
+                    else: newInstanceSpec.append('')
                 specMatrix.append(newInstanceSpec)
-
+            
             #Add on-demand and all 12 RI Pricing
             osName = productAttributes['operatingSystem']
             sw = productAttributes["preInstalledSw"]
@@ -126,7 +166,9 @@ def get_price(region):
                 else: priceMatrix[instanceType][plan] = price
     print("Total Records: " + str(totalPrice))
     #Prepare to write new spec file
-    
+    #Add more spec row
+    for attr in moreSpec['m1.medium']:
+        specRow.append(attr)
     outFileName = 'ec2-spec.csv'
     with open(outFileName, 'w') as csvfile:
         writer = csv.writer(csvfile)
@@ -144,28 +186,26 @@ def get_price(region):
     
     os.remove("temp-price.json") 
 
-# Translate region code to region name. Even though the API data contains
-# regionCode field, it will not return accurate data. However using the location
-# field will, but then we need to translate the region code into a region name.
-# You could skip this by using the region names in your code directly, but most
-# other APIs are using the region code.
+    return "Finish update ec-spec.csv and ec2-cost.csv file"
+
+# Translate region code to region name. Even though the API data contains region code
 def get_region_name(region_code):
     default_region = 'US East (N. Virginia)'
     endpoint_file = resource_filename('botocore', 'data/endpoints.json')
     try:
         with open(endpoint_file, 'r') as f:
             data = json.load(f)
-        # Botocore is using Europe while Pricing API using EU...sigh...
         return data['partitions'][0]['regions'][region_code]['description'].replace('Europe', 'EU')
     except IOError:
         return default_region
 
 
-# Use AWS Pricing API through Boto3
-# API only has us-east-1 and ap-south-1 as valid endpoints.
-# It doesn't have any impact on your selected region for your instance.
-client = boto3.client('pricing', region_name='us-east-1')
+# Use AWS Pricing API and ec2 describe through Boto3 via us-east-1 pricing endpoint
+priceClient = boto3.client('pricing', region_name='us-east-1')
+ec2Client = boto3.client('ec2')
 
+# Back up old file
+backupOldFile()
 # Get current price for a given instance, region and os
-price = get_price(get_region_name('ap-southeast-1'))
-print(price)
+result = get_price(get_region_name('ap-southeast-1'))
+print(result)

@@ -1,6 +1,7 @@
 import csv
 import re
 import re
+from socket import IP_OPTIONS
 import sys
 import math
 import json
@@ -30,6 +31,10 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
     cpu = 0
     ghz = 0
     memory = 0
+    reqDiskGB = 0
+    reqDiskIOPs = 0
+    reqDiskThroughput = 0
+    reqBUDay = 0
     priceModel = 'on-demand'
     os = "Linux"
     if input['Req Core']    != "": cpu = int(input['Req Core'])
@@ -37,8 +42,16 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
     if input['Req Mem GB']  != "": memory = float(input['Req Mem GB'])
     if input['Req OS']  != "": os = input['Req OS']
     if input['price-model'] != '': priceModel = input['price-model'] 
+    if input['Req Disk GB']    != "": reqDiskGB = float(input['Req Disk GB'])
+    if input['Req IOPs']    != "": reqDiskIOPs = float(input['Req IOPs'])
+    if input['Req MBps']    != "": reqDiskThroughput = float(input['Req MBps'])
+    if input['Req BU Day']    != "": reqBUDay = float(input['Req BU Day'])
 
     print(input["Source Name"] + " : " + str(cpu) + " cores, " + str(ghz) + " GHz, " + str(memory) + " GB mem, " + os + " OS")
+    #Cap Disk Size and IOPs MBps
+    if reqDiskGB > 64000: reqDiskGB = 64000
+    if reqDiskIOPs > 256000 : reqDiskIOPs = 256000
+    if reqDiskThroughput > 4000 : reqDiskThroughput = 4000
     #Set Options
     noGrav = False
     includePrev = False
@@ -54,6 +67,7 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
         specMem = float(spec['memory'].split(' ')[0])
         #Logic is here
         model = os + "-" + priceModel
+        #Skip if resource if not enough
         if noGrav and spec['instanceType'][2]=='g': continue
         if noGrav and spec['instanceType'][0]=='a': continue
         if includePrev == False and spec['currentGeneration'] == "No": continue 
@@ -63,17 +77,44 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
         if cpu > specCPU: continue
         if memory > specMem: continue
         if ec2Type[model] == 'N/A' or ec2Type[model] == '': continue
+        #Check Disk
+        specIop=0
+        specMBps=0;
+        if 'MaximumIops' in spec and spec['MaximumIops'] != '': specIop = float(spec['MaximumIops'])
+        if specIop < reqDiskIOPs : continue;
+        if 'MaximumThroughputInMBps' in spec and spec['MaximumThroughputInMBps'] != '': specMBps = float(spec['MaximumThroughputInMBps'] )
+        if specMBps < reqDiskThroughput : continue;
+
+        #Find Right Instance
         if float(ec2Type[model]) < minCost:
             minCost = float(ec2Type[model])
             input['Instance Type'] = ec2Type["API Name"]
             input['OS'] = os
             input['Pricing Model'] = priceModel
             input['vCPUs'] = int(specCPU)
-            input['Memory GB'] = float(specMem)
-            input['Hourly Pricing'] = minCost
-            input['Monthly Pricing'] = minCost * 730
+            input['Mem GB'] = float(specMem)
+            input['EC2 Hourly'] = minCost
+            input['EC2 Monthly'] = minCost * 730
             #print(ec2Type["API Name"])
-    
+        
+    #Find Right Disk
+    input['EBS GB'] = reqDiskGB
+    if reqDiskGB <= 16000 and reqDiskIOPs <= 16000 and reqDiskThroughput <= 1000:
+        input['EBS Type'] = 'GP3'
+        diffIOPs = reqDiskIOPs - 3000;
+        diffMBps = reqDiskThroughput - 125;
+        if diffIOPs < 0 : diffIOPs = 0;
+        if diffMBps < 0 : diffMBps = 0;
+        input['EBS Monthly'] = reqDiskGB*0.08 + diffIOPs*0.006 + diffMBps*0.048
+    else: 
+        input['EBS Type'] = 'IO2'
+        input['EBS Monthly'] = reqDiskGB*0.138 + reqDiskIOPs*0.072
+    #Calculate Backup size with 1%Daily change
+    bkkSize = reqDiskGB * (1 + 0.01 * reqBUDay)
+    input['BU GB'] = bkkSize
+    input['BU Monthly'] = bkkSize * 0.05
+    input['Total Monthly'] = input['EC2 Monthly'] + input['EBS Monthly'] + input['BU Monthly']
+
     return input
  
 
@@ -98,22 +139,18 @@ def main(argv):
     #Get EC2 instance for all VMs
     resultList = {}
     index=0;
-    sumReqCore = 0;
-    sumReqMem = 0;
-    sumCPU = 0;
-    sumMem =0;
-    sumHourly = 0
-
+    allTotalColumn = ['vCPUs','Mem GB','EC2 Hourly','EC2 Monthly','Req Core','Req Mem GB','Req Disk GB','Req IOPs','Req MBps', 'EBS Monthly','BU Monthly','Total Monthly','EBS GB','BU GB']
+    sumAll = {}
+    sumAll['Source Name'] = "Total"
+    
     for input in inputList:
         result = GetLowestInstancePrice(input, ec2Cost, ec2Spec, options)
         #print(result)
         resultList[index] = result
         index += 1
-        sumCPU = sumCPU + result['vCPUs']
-        sumMem = sumMem + result['Memory GB']
-        sumHourly = sumHourly + result['Hourly Pricing']
-        sumReqCore = sumReqCore + float(result['Req Core'])
-        sumReqMem = sumReqMem + float(result["Req Mem GB"])
+        for col in allTotalColumn:
+            if col in sumAll: sumAll[col] += float(result[col])
+            else: sumAll[col] = float(result[col])
     
     #Prepare to write file
     now = datetime.now()
@@ -123,18 +160,8 @@ def main(argv):
     #Write File
     
     print("Writing file to : " + outFileName)
-    #for result in resultList:
-    #    print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory GB']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
-        
-    sumRow = {}
-    sumRow['Source Name'] = "Total"
-    sumRow['Req Core'] = sumReqCore
-    sumRow['Req Mem GB'] = sumReqMem
-    sumRow['vCPUs'] = sumCPU
-    sumRow['Memory GB'] = sumMem
-    sumRow['Hourly Pricing'] = sumHourly
-    sumRow['Monthly Pricing'] = sumHourly * 730;
-    resultList[len(resultList)] = sumRow
+    
+    resultList[len(resultList)] = sumAll
 
     resultListStr = json.dumps(resultList, indent=2)
     with open("temp-result.json", "w") as outfile:
