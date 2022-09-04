@@ -9,13 +9,16 @@ import pandas as pd
 from datetime import datetime
 
 def ImportDictFromCSV(filename):
-    with open(filename, 'r',encoding='utf-8-sig') as read_obj:
-        # pass the file object to DictReader() to get the DictReader object
-        dict_reader = csv.DictReader(read_obj)
-        # get a list of dictionaries from dct_reader
-        list_of_dict = list(dict_reader)
-        # print list of dict i.e. rows
-        return list_of_dict
+    try:
+        with open(filename, 'r',encoding='utf-8-sig') as read_obj:
+            # pass the file object to DictReader() to get the DictReader object
+            dict_reader = csv.DictReader(read_obj)
+            # get a list of dictionaries from dct_reader
+            list_of_dict = list(dict_reader)
+            # print list of dict i.e. rows
+            return list_of_dict
+    except:
+        return "ERROR"
 
 def GetInstanceTypeSpecObj(ec2Type, ec2Spec):
     for item in ec2Spec:
@@ -28,13 +31,11 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
     ghz = 0
     memory = 0
     priceModel = 'on-demand'
-    priceModel = 'on-demand'
     os = "Linux"
-    if input['core']    != "": cpu = int(input['core'])
-    if input['ghz']     != "": ghz = float(input['ghz'])
-    if input['memory']  != "": memory = float(input['memory'])
-    if input['os']  != "": os = input['os']
-    if input['price-model'] != '': priceModel = input['price-model'] 
+    if input['Req Core']    != "": cpu = int(input['Req Core'])
+    if input['Req GHz']     != "": ghz = float(input['Req GHz'])
+    if input['Req Mem GB']  != "": memory = float(input['Req Mem GB'])
+    if input['Req OS']  != "": os = input['Req OS']
     if input['price-model'] != '': priceModel = input['price-model'] 
 
     print(input["Source Name"] + " : " + str(cpu) + " cores, " + str(ghz) + " GHz, " + str(memory) + " GB mem, " + os + " OS")
@@ -68,7 +69,7 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
             input['OS'] = os
             input['Pricing Model'] = priceModel
             input['vCPUs'] = int(specCPU)
-            input['Memory'] = float(specMem)
+            input['Memory GB'] = float(specMem)
             input['Hourly Pricing'] = minCost
             input['Monthly Pricing'] = minCost * 730
             #print(ec2Type["API Name"])
@@ -82,15 +83,23 @@ def main(argv):
     options = argv[1:]
     ec2Cost = ImportDictFromCSV('ec2-cost.csv')
     ec2Spec = ImportDictFromCSV('ec2-spec.csv')
-    inputList = ImportDictFromCSV(argv[0])
-    #Get filename 
+    #ERROR if cannot open file
+    isStop = False
+    if ec2Cost == "ERROR": print('ec2-cost.csv Cannot be found. Please run UpdateEC2Price.py'); isStop = True;
+    if ec2Spec == "ERROR": print('ec2-spec.csv Cannot be found. Please run UpdateEC2Price.py'); isStop = True;
+
+    #Get requirement filename and Open 
     fileName = argv[0].split('.')
     print("Getting fron file : " + fileName[0])
+    inputList = ImportDictFromCSV(argv[0])
+    if inputList == "ERROR": print('ec2-spec.csv Cannot be found. Please run UpdateEC2Price.py'); isStop = True;
+    if isStop: return;
+
     #Get EC2 instance for all VMs
     resultList = {}
     index=0;
-    sumcore = 0;
-    summem = 0;
+    sumReqCore = 0;
+    sumReqMem = 0;
     sumCPU = 0;
     sumMem =0;
     sumHourly = 0
@@ -101,10 +110,10 @@ def main(argv):
         resultList[index] = result
         index += 1
         sumCPU = sumCPU + result['vCPUs']
-        sumMem = sumMem + result['Memory']
+        sumMem = sumMem + result['Memory GB']
         sumHourly = sumHourly + result['Hourly Pricing']
-        sumcore = sumcore + float(result['core'])
-        summem = summem + float(result["memory"])
+        sumReqCore = sumReqCore + float(result['Req Core'])
+        sumReqMem = sumReqMem + float(result["Req Mem GB"])
     
     #Prepare to write file
     now = datetime.now()
@@ -115,14 +124,14 @@ def main(argv):
     
     print("Writing file to : " + outFileName)
     #for result in resultList:
-    #    print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
+    #    print(result["Source Name"] + " : Type : " + result["Instance Type"] + " " + str(result['vCPUs']) + " cores, " + str(result['Memory GB']) + " GB mem, " + str(result['Hourly Pricing']) + " $/hrs" + str(result['Hourly Pricing']*730) + " $/Month")
         
     sumRow = {}
     sumRow['Source Name'] = "Total"
-    sumRow['core'] = sumcore
-    sumRow['memory'] = summem
+    sumRow['Req Core'] = sumReqCore
+    sumRow['Req Mem GB'] = sumReqMem
     sumRow['vCPUs'] = sumCPU
-    sumRow['Memory'] = sumMem
+    sumRow['Memory GB'] = sumMem
     sumRow['Hourly Pricing'] = sumHourly
     sumRow['Monthly Pricing'] = sumHourly * 730;
     resultList[len(resultList)] = sumRow

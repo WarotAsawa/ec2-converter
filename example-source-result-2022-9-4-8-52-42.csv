@@ -1,4 +1,4 @@
-Source Name,core,ghz,memory,os,price-model,Instance Type,OS,Pricing Model,vCPUs,Memory,Hourly Pricing,Monthly Pricing
+Source Name,Req Core,Req GHz,Req Mem GB,Req OS,price-model,Instance Type,OS,Pricing Model,vCPUs,Memory GB,Hourly Pricing,Monthly Pricing
 VM Source 01,1,,0.5,Linux,on-demand,t4g.nano,Linux,on-demand,2,0.5,0.0053,3.8689999999999998
 VM Source 02,1,,0.5,Windows,RI-1Y-NUF,t2.nano,Windows,RI-1Y-NUF,1,0.5,0.0068000000000000005,4.964
 VM Source 03,2,2.2,4.0,Windows,RI-1Y-PUF,t3a.medium,Windows,RI-1Y-PUF,2,4.0,0.046587671232876,34.00899999999948

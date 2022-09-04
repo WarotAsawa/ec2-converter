@@ -1,4 +1,4 @@
-Source Name,core,ghz,memory,os,price-model
+Source Name,Req Core,Req GHz,Req Mem GB,Req OS,price-model
 VM Source 01,1,,0.5,Linux,on-demand
 VM Source 02,1,,0.5,Windows,RI-1Y-NUF
 VM Source 03,2,2.2,4,Windows,RI-1Y-PUF
