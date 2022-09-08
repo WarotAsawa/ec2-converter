@@ -179,7 +179,7 @@ def main(argv):
 
     resultObject = pd.read_json("temp-result.json", orient='index')
     resultObject.to_csv(outFileName, index=False)
-    print(resultObject)
+    print(resultObject[['Source Name','Req Core','Req GHz','Req Mem GB','Instance Type', 'OS', 'Pricing Model', 'vCPUs', 'Mem GB', 'EBS GB','Req IOPs','Req MBps','EBS Type' , 'Total Monthly']])
     os.remove("temp-result.json") 
 
 if __name__ == "__main__":
