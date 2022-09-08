@@ -26,7 +26,7 @@ def GetInstanceTypeSpecObj(ec2Type, ec2Spec):
         if item['instanceType'] == ec2Type:
             return item
     
-def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
+def GetLowestInstancePrice(input, ec2Cost, ec2Spec, noGrav, includePrev, excludeList):
     minCost = 999999.9
     cpu = 0
     ghz = 0
@@ -52,12 +52,7 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
     if reqDiskGB > 64000: reqDiskGB = 64000
     if reqDiskIOPs > 256000 : reqDiskIOPs = 256000
     if reqDiskThroughput > 4000 : reqDiskThroughput = 4000
-    #Set Options
-    noGrav = False
-    includePrev = False
-    for opt in options:
-        if "no-grav" in opt: noGrav = True
-        if "include-prev" in opt: includePrev = True
+    
     for ec2Type in ec2Cost:
         #print(ec2Type)
         spec = GetInstanceTypeSpecObj(ec2Type["API Name"], ec2Spec)
@@ -85,6 +80,11 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, options):
         if 'MaximumThroughputInMBps' in spec and spec['MaximumThroughputInMBps'] != '': specMBps = float(spec['MaximumThroughputInMBps'] )
         if specMBps < reqDiskThroughput : continue;
 
+        #Skip exclude
+        isExcluded = False
+        for exc in excludeList:
+            if exc in spec['instanceType'].split('.')[0]: isExcluded = True; break
+        if isExcluded: continue;
         #Find Right Instance
         if float(ec2Type[model]) < minCost:
             minCost = float(ec2Type[model])
@@ -142,9 +142,19 @@ def main(argv):
     allTotalColumn = ['vCPUs','Mem GB','EC2 Hourly','EC2 Monthly','Req Core','Req Mem GB','Req Disk GB','Req IOPs','Req MBps', 'EBS Monthly','BU Monthly','Total Monthly','EBS GB','BU GB']
     sumAll = {}
     sumAll['Source Name'] = "Total"
-    
+    #Set Options
+    noGrav = False
+    includePrev = False
+    excludeList = [];
+
+    for opt in options:
+        if "no-grav" in opt: noGrav = True
+        if "include-prev" in opt: includePrev = True
+        if "exclude" in opt:
+            excludeText = opt.split('=')[1]
+            excludeList = excludeText.split(',')
     for input in inputList:
-        result = GetLowestInstancePrice(input, ec2Cost, ec2Spec, options)
+        result = GetLowestInstancePrice(input, ec2Cost, ec2Spec, noGrav, includePrev, excludeList)
         #print(result)
         resultList[index] = result
         index += 1

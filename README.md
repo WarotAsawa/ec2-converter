@@ -22,12 +22,15 @@ Converter script has two option available.
 
  1. **include-prev** : Include previous EC@ generation in the output.
  2. **no-grav** : Exclude Gravitron instances in the output.
+ 3. **exclude** : Exclude a selected instances type ex: t3,c,m,i,x1 etc.
 
 Here is the example to run with options
 
     python converter.py <input-file-name>.csv include-prev
     python converter.py <input-file-name>.csv no-grav
     python converter.py <input-file-name>.csv include-prev no-grav
+    python converter.py <input-file-name>.csv include-prev exclude=t,c5,x2
+    
 
 ## Updating price and spec database
 If you need to keep the pricing up to date, simply run **updateEC2Price.py**. This script will get pricing from AWS Pricing API and  get EC2 specification from EC2 API using boto3 library. For this version, this update script is using the price from **ap-southeast-1 (Singapore)** region.

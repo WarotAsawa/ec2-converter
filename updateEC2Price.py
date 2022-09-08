@@ -9,7 +9,6 @@ from datetime import datetime
 
 # Set FIlter tp Singapore Only
 FLT = '[{{"Field": "tenancy", "Value": "shared", "Type": "TERM_MATCH"}},'\
-      '{{"Field": "preInstalledSw", "Value": "NA", "Type": "TERM_MATCH"}},'\
       '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}},'\
       '{{"Field": "capacitystatus", "Value": "Used", "Type": "TERM_MATCH"}}]'
 
@@ -202,7 +201,7 @@ def get_region_name(region_code):
 
 # Use AWS Pricing API and ec2 describe through Boto3 via us-east-1 pricing endpoint
 priceClient = boto3.client('pricing', region_name='us-east-1')
-ec2Client = boto3.client('ec2')
+ec2Client = boto3.client('ec2', region_name='us-east-1')
 
 # Back up old file
 backupOldFile()
