@@ -105,7 +105,7 @@ def GetLowestInstancePrice(input, ec2Cost, ec2Spec, noGrav, includePrev, exclude
         diffMBps = reqDiskThroughput - 125;
         if diffIOPs < 0 : diffIOPs = 0;
         if diffMBps < 0 : diffMBps = 0;
-        input['EBS Monthly'] = reqDiskGB*0.08 + diffIOPs*0.006 + diffMBps*0.048
+        input['EBS Monthly'] = reqDiskGB*0.096 + diffIOPs*0.006 + diffMBps*0.048
     else: 
         input['EBS Type'] = 'IO2'
         input['EBS Monthly'] = reqDiskGB*0.138 + reqDiskIOPs*0.072

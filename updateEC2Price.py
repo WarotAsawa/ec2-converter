@@ -7,9 +7,10 @@ import pandas as pd
 from pkg_resources import resource_filename
 from datetime import datetime
 
-# Set FIlter tp Singapore Only
+# Set FIlter to Singapore Only, and no BYOL
 FLT = '[{{"Field": "tenancy", "Value": "shared", "Type": "TERM_MATCH"}},'\
       '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}},'\
+      '{{"Field": "licenseModel", "Value": "No License required", "Type": "TERM_MATCH"}},'\
       '{{"Field": "capacitystatus", "Value": "Used", "Type": "TERM_MATCH"}}]'
 
 def translate_platform_name(operating_system, preinstalled_software):
@@ -99,7 +100,7 @@ def get_price(region):
         #Get all returned PriceList
         for i in range(0,len(data['PriceList'])-1):
             currentData = json.loads(data['PriceList'][i])
-            productAttributes = currentData["product"]["attributes"]
+            productAttributes = currentData["product"]["attributes"]   
             instanceType = productAttributes["instanceType"]
             #Update Instance Spec if found new instance
             if (instanceType in priceMatrix) == False:
